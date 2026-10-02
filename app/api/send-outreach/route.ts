@@ -11,9 +11,9 @@ interface LeadInput {
 }
 
 interface ProofLinks {
-  dubbing?: string;
   design?: string;
   dev?: string;
+  extra?: string;
 }
 
 interface RequestPayload {
@@ -35,18 +35,17 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-// Helper to auto-linkify and convert newlines to HTML for custom notes
+// Auto-linkify URLs and preserve linebreaks in custom note
 function formatCustomNoteToHtml(note: string): string {
   if (!note) return '';
   const escaped = note
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  
-  // Linkify URLs
+
   const linkified = escaped.replace(
     /(https?:\/\/[^\s]+)/g,
-    '<a href="$1" target="_blank" style="color: #38bdf8; text-decoration: underline; font-weight: 600;">$1</a>'
+    '<a href="$1" target="_blank" style="color: #00f0ff; text-decoration: underline; font-weight: 600;">$1</a>'
   );
 
   return linkified.replace(/\n/g, '<br />');
@@ -66,12 +65,11 @@ export async function POST(req: NextRequest) {
 
   const {
     leads,
-    senderName = 'Syed Shawon // Creative Director & Full-Stack Engineer',
+    senderName = 'Syed Shawon // Designer & Full-Stack Web Developer',
     customNote = '',
     proofLinks = {
       design: 'https://syedshahon564-ops.github.io/',
       dev: 'https://syedshahon564-ops.github.io/danger-shawon/',
-      dubbing: 'https://drive.google.com/drive/folders/sample-dubbing-showcase',
     },
   } = body;
 
@@ -127,7 +125,7 @@ export async function POST(req: NextRequest) {
 
       emitEvent({
         type: 'INIT',
-        message: `[MISSION ENGINE] Campaign initialized. Enqueued ${leads.length} creator targets.`,
+        message: `[MISSION ENGINE] Campaign initialized. Processing ${leads.length} creator targets.`,
         total: leads.length,
         timestamp: new Date().toISOString(),
       });
@@ -155,16 +153,14 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString(),
         });
 
-        // 1. Dynamic Subject Line
-        const subject = `Quick question regarding ${channelName} & Bengali audience expansion`;
+        // Dynamic High-Converting Subject Line tailored to Thumbnail CTR & Custom Website
+        const subject = `Quick concept for ${channelName} | High-CTR Thumbnails & Custom Website`;
 
         const designLink = proofLinks.design || 'https://syedshahon564-ops.github.io/';
         const devLink = proofLinks.dev || 'https://syedshahon564-ops.github.io/danger-shawon/';
-        const dubbingLink = proofLinks.dubbing || 'https://drive.google.com/drive/folders/sample-dubbing-showcase';
-
         const formattedCustomNote = formatCustomNoteToHtml(customNote);
 
-        // 2. High-Converting Personalized HTML Pitch Body (Irresistible Creator Pitch)
+        // High-Converting Personalized HTML Pitch Body (Focused on: Thumbnails + Websites + Graphic Design)
         const htmlBody = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -178,17 +174,18 @@ export async function POST(req: NextRequest) {
     .badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #00f0ff; background: rgba(0, 240, 255, 0.12); border: 1px solid rgba(0, 240, 255, 0.3); padding: 4px 12px; border-radius: 9999px; margin-bottom: 10px; }
     .title { margin: 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em; }
     .content { padding: 30px; color: #cbd5e1; font-size: 14.5px; }
-    .hook { font-size: 15px; margin-bottom: 18px; }
+    .hook { font-size: 15px; margin-bottom: 16px; }
     
-    .note-card { background: rgba(14, 165, 233, 0.07); border-left: 4px solid #00f0ff; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 20px 0; font-size: 14px; color: #f1f5f9; line-height: 1.65; }
-    .feature-card { background-color: #162032; border-left: 4px solid #10b981; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 20px 0; }
-    .feature-title { color: #ffffff; font-weight: 700; font-size: 15.5px; }
+    .note-card { background: rgba(14, 165, 233, 0.08); border-left: 4px solid #00f0ff; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 20px 0; font-size: 14px; color: #f1f5f9; line-height: 1.65; }
+    
+    .services-grid { margin: 22px 0; display: grid; gap: 14px; }
+    .service-card { background-color: #162032; border-left: 4px solid #10b981; padding: 14px 18px; border-radius: 0 8px 8px 0; }
+    .service-card-title { color: #ffffff; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .service-card-desc { font-size: 13.5px; color: #94a3b8; margin: 0; }
     .metric { color: #34d399; font-weight: 700; }
-    .list { margin: 14px 0; padding-left: 20px; }
-    .list li { margin-bottom: 10px; }
 
     .portfolios-grid { margin: 24px 0; padding: 18px; background: #0c121e; border: 1px solid #1e293b; border-radius: 10px; }
-    .portfolio-item { margin-bottom: 12px; padding: 10px 14px; background: #131b2c; border: 1px solid #233149; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
+    .portfolio-item { margin-bottom: 12px; padding: 12px 16px; background: #131b2c; border: 1px solid #233149; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
     .portfolio-title { font-weight: 600; color: #f8fafc; font-size: 13.5px; }
     .portfolio-link { color: #38bdf8; text-decoration: none; font-weight: 700; font-size: 12.5px; background: rgba(56, 189, 248, 0.12); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25); }
     
@@ -202,29 +199,39 @@ export async function POST(req: NextRequest) {
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <div class="badge">Audience &amp; Growth Localization</div>
-        <h1 class="title">Unlocking South Asia's 250M+ Viewers for ${channelName}</h1>
+        <div class="badge">Visuals &bull; Web Infrastructure &bull; CTR Scale</div>
+        <h1 class="title">Scaling Visuals &amp; Web Presence for ${channelName}</h1>
       </div>
       <div class="content">
         <p class="hook">Hey <strong>${creatorName}</strong>,</p>
-        <p>I’ve been closely tracking your uploads on <strong>${channelName}</strong>—the editorial pacing, production consistency, and audience retention benchmark you set is incredible.</p>
+        <p>I’ve been following your uploads on <strong>${channelName}</strong>—the editorial pacing, storytelling, and high-energy engagement consistently set the benchmark in your space.</p>
 
         ${formattedCustomNote ? `<div class="note-card">${formattedCustomNote}</div>` : ''}
 
-        <p>I’m reaching out with a direct, zero-friction growth proposition:</p>
+        <p>I specialize as a dedicated Creative Designer &amp; Full-Stack Web Developer partnering with creators to solve 3 core revenue &amp; audience drivers:</p>
 
-        <div class="feature-card">
-          <div class="feature-title">Core Initiative: AI English-to-Bengali Video Dubbing</div>
-          <p style="margin: 6px 0 0 0; font-size: 13.5px; color: #94a3b8;">
-            Tap into the <span class="metric">250M+ native Bengali demographic</span> across Bangladesh and West Bengal with zero operational overhead on your end. Bengali viewers represent one of YouTube’s fastest-growing watch-time cohorts, yet tier-1 creators rarely localize their catalog for them.
-          </p>
+        <div class="services-grid">
+          <div class="service-card" style="border-left-color: #00f0ff;">
+            <div class="service-card-title">1. High-CTR Thumbnail Design</div>
+            <p class="service-card-desc">
+              Psychology-driven visual hierarchy, color grading, and facial focal points engineered to achieve <span class="metric">12% to 16%+ CTR</span> in competitive feeds. No cluttered templates—pure click conversion.
+            </p>
+          </div>
+
+          <div class="service-card" style="border-left-color: #10b981;">
+            <div class="service-card-title">2. Custom Website Making (Web Development)</div>
+            <p class="service-card-desc">
+              Bespoke, high-speed modern websites for ${channelName} (Next.js/React). Perfect for your creator brand, sponsorship media kit, merch showcase, fan community, or interactive web apps.
+            </p>
+          </div>
+
+          <div class="service-card" style="border-left-color: #8b5cf6;">
+            <div class="service-card-title">3. Channel Branding &amp; Graphic Design</div>
+            <p class="service-card-desc">
+              Complete visual identity: YouTube channel banners, stream overlays, motion graphics assets, and social media brand kits that make your channel look like a tier-1 media brand.
+            </p>
+          </div>
         </div>
-
-        <p>Beyond neural voice cloning that preserves your exact vocal timbre, pacing, and infectious excitement, we also handle full visual &amp; tech automation:</p>
-        <ul class="list">
-          <li><strong>High-CTR Custom Thumbnails:</strong> Psychology-driven visual hierarchy tested to push 12-16%+ CTR in competitive gaming &amp; tech spaces.</li>
-          <li><strong>Full-Stack Creator Tech &amp; Bots:</strong> Interactive Discord community bots, esports tournaments hubs, and custom workflow web portals.</li>
-        </ul>
 
         <div class="portfolios-grid">
           <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">
@@ -233,37 +240,31 @@ export async function POST(req: NextRequest) {
 
           <div class="portfolio-item">
             <span class="portfolio-title">🎨 Graphic Design &amp; High-CTR Thumbnail Portfolio</span>
-            <a href="${designLink}" target="_blank" class="portfolio-link">View Portfolio &rarr;</a>
+            <a href="${designLink}" target="_blank" class="portfolio-link">View Design Work &rarr;</a>
           </div>
 
           <div class="portfolio-item">
-            <span class="portfolio-title">💻 Full-Stack Dev &amp; Automation Hub</span>
-            <a href="${devLink}" target="_blank" class="portfolio-link">View Dev Hub &rarr;</a>
+            <span class="portfolio-title">💻 Custom Website &amp; Dev Portfolio</span>
+            <a href="${devLink}" target="_blank" class="portfolio-link">View Web Projects &rarr;</a>
           </div>
-
-          ${proofLinks.dubbing ? `
-          <div class="portfolio-item">
-            <span class="portfolio-title">🎙️ AI Bengali Dubbing Samples Showcase</span>
-            <a href="${dubbingLink}" target="_blank" class="portfolio-link">Listen Samples &rarr;</a>
-          </div>` : ''}
         </div>
 
         <div class="cta-card">
-          <div class="cta-heading">Zero-Risk Free Test Offer</div>
+          <div class="cta-heading">Zero-Risk Free Sample Offer</div>
           <p style="margin: 6px 0 12px 0; font-size: 13.5px; color: #cbd5e1;">
-            I can dub a free 60-second test clip from your latest video OR design an alternative high-CTR thumbnail so you can judge the quality yourself. Zero commitment.
+            I don't expect you to take my word for it. Send me your next video title, and I will design a free high-CTR test thumbnail for your upcoming upload (or draft a 1-page custom website mock for ${channelName}) completely free.
           </p>
-          <a href="mailto:${smtpUser}?subject=Send%2060s%20Dub%20Test%20for%20${encodeURIComponent(channelName)}" class="cta-button">Claim Free 60s Test Sample</a>
+          <a href="mailto:${smtpUser}?subject=Free%20Thumbnail%20or%20Website%20Test%20for%20${encodeURIComponent(channelName)}" class="cta-button">Claim Free Test Concept</a>
         </div>
 
         <p style="margin-top: 22px; font-size: 14px;">
-          Would you be open to letting me dub a 60-second sample of your latest upload?
+          Would you be open to seeing a free test thumbnail concept for your upcoming upload?
         </p>
 
         <p style="margin-bottom: 0;">
           Best regards,<br>
           <strong style="color: #ffffff;">${senderName}</strong><br>
-          <span style="font-size: 12.5px; color: #64748b;">Creator Localization &amp; Full-Stack Specialist</span>
+          <span style="font-size: 12.5px; color: #64748b;">Designer &amp; Full-Stack Web Developer</span>
         </p>
       </div>
 
@@ -275,33 +276,32 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
-        // 3. Plain Text Alternative
+        // Plain Text Alternative for 100% deliverability
         const textBody = `Hey ${creatorName},
 
-I’ve been following ${channelName} and really admire the production quality you bring to every video.
+I’ve been following ${channelName} and really admire the quality and consistency you bring to every video.
 
 ${customNote ? `${customNote}\n\n` : ''}Quick proposition:
-I help international creators unlock the 250M+ Bengali demographic (Bangladesh & West Bengal) with zero friction on your end through neural English-to-Bengali video dubbing that preserves your voice, intonation, and excitement.
+I help top creators scale their views and brand presence across 3 key services:
 
-We also build:
-- High-CTR Gaming/Tech Thumbnails (A/B tested for 12-16%+ CTR)
-- Full-Stack Discord Automation Bots & Interactive Web Platforms
+1. 🎨 High-CTR Thumbnail Design: Click-tested, psychology-driven thumbnails engineered for 12-16%+ CTR.
+   Verified Design Portfolio: ${designLink}
 
-Verified Portfolios:
-- 🎨 Design Portfolio: ${designLink}
-- 💻 Dev & Automation: ${devLink}
-${proofLinks.dubbing ? `- 🎙️ Dubbing Showcase: ${dubbingLink}` : ''}
+2. 💻 Custom Website Development: Fast, responsive, dark-aesthetic modern websites for ${channelName} (sponsorship deck, merch, community web hub).
+   Verified Web Dev Portfolio: ${devLink}
+
+3. 🚀 Graphic Design & Channel Branding: High-end channel art, banners, overlays, and social visual kits.
 
 Zero-Risk Offer:
-I can dub a free 60-second test clip from your latest ${channelName} video OR design an alternative thumbnail so you can judge the quality yourself with zero commitment.
+Send me your upcoming video title and I will design a custom high-CTR test thumbnail for free (or build a 1-page web concept for ${channelName}) so you can judge the quality yourself with zero commitment.
 
-Would you be open to seeing a 60s test clip?
+Would you be open to seeing a free test thumbnail for your next upload?
 
 Best regards,
 ${senderName}
 ${smtpUser}`;
 
-        // 4. Send Email via Transporter
+        // Send Email via Transporter
         const startTime = performance.now();
         try {
           const info = await transporter.sendMail({
@@ -341,7 +341,7 @@ ${smtpUser}`;
           });
         }
 
-        // 5. Enforce Anti-Spam Delay (20 to 30s) between dispatches (skip on final email)
+        // Enforce Anti-Spam Delay (20 to 30s) between dispatches (skip on final email)
         if (i < leads.length - 1) {
           const delaySeconds = 25; // Safe anti-spam interval
           for (let sec = delaySeconds; sec > 0; sec--) {

@@ -18,10 +18,12 @@ import {
   Trash2,
   Check,
   ExternalLink,
+  Palette,
+  Globe,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 interface ProofLinks {
-  dubbing: string;
   design: string;
   dev: string;
 }
@@ -41,25 +43,24 @@ Mark, Mark Rober, mark.sample@crunchlabs.com
 Shroud, Shroud, shroud.sample@loaded.gg
 Dagogo, ColdFusion, dagogo.sample@coldfusionmedia.com`;
 
-const DEFAULT_CUSTOM_NOTE = `I lead a dual-threat creative design & full-stack engineering suite specifically built for high-growth YouTube creators. Instead of pitched generic edits, we solve your highest-ROI bottlenecks:
+const DEFAULT_CUSTOM_NOTE = `I specialize in helping top creators scale their channel views, brand authority, and revenue through 3 high-impact services:
 
-• 🎨 High-CTR Visual Mastery: Viral, psychology-driven YouTube thumbnails & branding engineered for 12-16%+ CTR.
-  Verified Design Portfolio: https://syedshahon564-ops.github.io/
+1. 🎨 High-CTR Thumbnail Design: Click-tested visual psychology, high contrast, and clean focal points engineered for 12-16%+ CTR.
+   Verified Design Portfolio: https://syedshahon564-ops.github.io/
 
-• ⚡ Full-Stack & Automation Engineering: Custom Discord bots, creator web hubs, automated workflows, and interactive community tools.
-  Verified Dev Portfolio: https://syedshahon564-ops.github.io/danger-shawon/
+2. 💻 Custom Website Making (Web Development): Sleek, dark-aesthetic modern websites for your channel (Next.js/React) for sponsorship decks, merch showcases, fan communities, or interactive web apps.
+   Verified Web Dev Portfolio: https://syedshahon564-ops.github.io/danger-shawon/
 
-• 🎙️ 250M+ Bengali Demographic Expansion: Neural voice cloning that captures your exact vocal cadence, excitement, and comedic timing.
+3. 🚀 Channel Branding & Graphic Design: High-end YouTube banners, stream overlays, and complete visual branding kits.
 
-Zero Risk Guarantee: I will dub a free 60s sample clip OR redesign an alternative high-CTR test thumbnail for your latest upload at zero cost so you can judge the execution yourself.`;
+Zero Risk Guarantee: Send me your upcoming video title and I will design a free high-CTR test thumbnail (or build a 1-page custom website wireframe) so you can judge the quality yourself. Zero commitment.`;
 
 export default function OutreachDashboard() {
-  // Campaign Configuration State with Syed Shawon's live portfolios
-  const [senderName, setSenderName] = useState('Syed Shawon // Creative Director & Full-Stack Engineer');
+  // Campaign Configuration State
+  const [senderName, setSenderName] = useState('Syed Shawon // Designer & Full-Stack Web Developer');
   const [proofLinks, setProofLinks] = useState<ProofLinks>({
     design: 'https://syedshahon564-ops.github.io/',
     dev: 'https://syedshahon564-ops.github.io/danger-shawon/',
-    dubbing: 'https://drive.google.com/drive/folders/sample-dubbing-showcase',
   });
   const [customNote, setCustomNote] = useState(DEFAULT_CUSTOM_NOTE);
 
@@ -76,7 +77,7 @@ export default function OutreachDashboard() {
       id: 'init',
       timestamp: new Date().toLocaleTimeString(),
       status: 'INIT',
-      message: 'System ready. Verified portfolios loaded: Design (syedshahon564-ops.github.io) and Dev (danger-shawon). Ready to dispatch.',
+      message: 'System ready. Configured for Design, Website Making & High-CTR Thumbnail outreach.',
     },
   ]);
 
@@ -291,23 +292,23 @@ export default function OutreachDashboard() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
-                AUTHORITY OUTREACH PIPELINE
+                HIGH-CONVERTING CREATOR OUTREACH
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
-                DESIGN &bull; DEV &bull; DUB
+                DESIGN &bull; WEBSITES &bull; THUMBNAILS
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-teal-300">
-                YOUTUBER COLD OUTREACH
+                CREATOR OUTREACH ENGINE
               </span>
               <span className="text-slate-600 font-mono text-xl font-light">//</span>
               <span className="text-slate-400 text-lg md:text-xl font-medium tracking-wide">
-                HIGH-CONVERSION SUITE
+                DESIGN &amp; WEB SUITE
               </span>
             </h1>
             <p className="text-xs md:text-sm text-slate-400 mt-1">
-              Engineered with verified live portfolios, AI voice dubbing demos, and high-CTR visual showcases that prevent rejection.
+              Automated high-converting pitches offering <strong>Graphic Design</strong>, <strong>Custom Website Making</strong>, and <strong>High-CTR Thumbnails</strong>.
             </p>
           </div>
 
@@ -344,10 +345,10 @@ export default function OutreachDashboard() {
                 </div>
                 <div>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 font-mono">
-                    Pitch Persona &amp; Portfolios
+                    Service Persona &amp; Portfolios
                   </h2>
                   <p className="text-[11px] text-slate-400 font-mono">
-                    Live Verified Portfolios &amp; Irresistible Offer
+                    Design, Website Making &amp; Thumbnail Services
                   </p>
                 </div>
               </div>
@@ -364,7 +365,7 @@ export default function OutreachDashboard() {
                 disabled={isDispatching}
                 value={senderName}
                 onChange={(e) => setSenderName(e.target.value)}
-                placeholder="Syed Shawon // Creative Director & Full-Stack Engineer"
+                placeholder="Syed Shawon // Designer & Full-Stack Web Developer"
                 className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500 transition"
               />
             </div>
@@ -373,14 +374,15 @@ export default function OutreachDashboard() {
             <div className="space-y-3 pt-2">
               <span className="block text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1.5">
                 <LinkIcon className="w-3.5 h-3.5" />
-                <span>Verified Portfolio Links (Auto-injected into Email)</span>
+                <span>Verified Portfolios (Injected into Pitch)</span>
               </span>
 
-              {/* Graphics Design Portfolio */}
+              {/* 1. Graphic Design & Thumbnail Portfolio */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-                    <span>1. Graphics Design &amp; High-CTR Thumbnail Portfolio</span>
+                  <label className="text-[10px] font-mono text-slate-300 flex items-center gap-1.5 font-semibold">
+                    <ImageIcon className="w-3 h-3 text-cyan-400" />
+                    <span>1. Graphic Design &amp; High-CTR Thumbnail Portfolio</span>
                   </label>
                   <a
                     href={proofLinks.design}
@@ -388,7 +390,7 @@ export default function OutreachDashboard() {
                     rel="noreferrer"
                     className="text-[10px] font-mono text-cyan-400 hover:underline flex items-center gap-0.5"
                   >
-                    <span>Test link</span>
+                    <span>Visit</span>
                     <ExternalLink className="w-2.5 h-2.5" />
                   </a>
                 </div>
@@ -402,11 +404,12 @@ export default function OutreachDashboard() {
                 />
               </div>
 
-              {/* Dev & Automation Portfolio */}
+              {/* 2. Custom Website Making & Dev Portfolio */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-                    <span>2. Full-Stack Dev &amp; Automation Portfolio</span>
+                  <label className="text-[10px] font-mono text-slate-300 flex items-center gap-1.5 font-semibold">
+                    <Globe className="w-3 h-3 text-emerald-400" />
+                    <span>2. Custom Website Making &amp; Dev Portfolio</span>
                   </label>
                   <a
                     href={proofLinks.dev}
@@ -414,7 +417,7 @@ export default function OutreachDashboard() {
                     rel="noreferrer"
                     className="text-[10px] font-mono text-emerald-400 hover:underline flex items-center gap-0.5"
                   >
-                    <span>Test link</span>
+                    <span>Visit</span>
                     <ExternalLink className="w-2.5 h-2.5" />
                   </a>
                 </div>
@@ -427,21 +430,6 @@ export default function OutreachDashboard() {
                   className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-emerald-300 font-mono focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
-
-              {/* Dubbing Sample Link */}
-              <div>
-                <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                  3. AI Voice Dubbing Sample Showcase (Drive / Cloud)
-                </label>
-                <input
-                  type="url"
-                  disabled={isDispatching}
-                  value={proofLinks.dubbing}
-                  onChange={(e) => setProofLinks({ ...proofLinks, dubbing: e.target.value })}
-                  placeholder="https://drive.google.com/..."
-                  className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition"
-                />
-              </div>
             </div>
 
             {/* Custom High-Converting Note */}
@@ -449,18 +437,18 @@ export default function OutreachDashboard() {
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Authority Pitch Note (Highlighted in Email)</span>
+                  <span>High-Converting Pitch Note (Design &bull; Website &bull; Thumbnails)</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setCustomNote(DEFAULT_CUSTOM_NOTE)}
                   className="text-[10px] font-mono text-cyan-400 hover:underline"
                 >
-                  Reset Template
+                  Reset Pitch
                 </button>
               </div>
               <textarea
-                rows={7}
+                rows={8}
                 disabled={isDispatching}
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
@@ -481,7 +469,7 @@ export default function OutreachDashboard() {
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               </div>
               <p className="text-slate-400 text-[11px] leading-relaxed">
-                Every dispatch sequence enforces a mandatory <strong>20–30 second cooldown</strong> between emails to simulate authentic human behavior and safeguard your Gmail sender score.
+                Pacing emails by <strong>20–30 seconds</strong> ensures Gmail treats each message as a genuine human dispatch, guaranteeing top inbox deliverability.
               </p>
             </div>
           </div>
