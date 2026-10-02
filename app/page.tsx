@@ -16,8 +16,8 @@ import {
   Square,
   Copy,
   Trash2,
-  Flame,
   Check,
+  ExternalLink,
 } from 'lucide-react';
 
 interface ProofLinks {
@@ -41,15 +41,27 @@ Mark, Mark Rober, mark.sample@crunchlabs.com
 Shroud, Shroud, shroud.sample@loaded.gg
 Dagogo, ColdFusion, dagogo.sample@coldfusionmedia.com`;
 
+const DEFAULT_CUSTOM_NOTE = `I lead a dual-threat creative design & full-stack engineering suite specifically built for high-growth YouTube creators. Instead of pitched generic edits, we solve your highest-ROI bottlenecks:
+
+• 🎨 High-CTR Visual Mastery: Viral, psychology-driven YouTube thumbnails & branding engineered for 12-16%+ CTR.
+  Verified Design Portfolio: https://syedshahon564-ops.github.io/
+
+• ⚡ Full-Stack & Automation Engineering: Custom Discord bots, creator web hubs, automated workflows, and interactive community tools.
+  Verified Dev Portfolio: https://syedshahon564-ops.github.io/danger-shawon/
+
+• 🎙️ 250M+ Bengali Demographic Expansion: Neural voice cloning that captures your exact vocal cadence, excitement, and comedic timing.
+
+Zero Risk Guarantee: I will dub a free 60s sample clip OR redesign an alternative high-CTR test thumbnail for your latest upload at zero cost so you can judge the execution yourself.`;
+
 export default function OutreachDashboard() {
-  // Campaign Configuration State
-  const [senderName, setSenderName] = useState('Alex // AI Localization Lead');
+  // Campaign Configuration State with Syed Shawon's live portfolios
+  const [senderName, setSenderName] = useState('Syed Shawon // Creative Director & Full-Stack Engineer');
   const [proofLinks, setProofLinks] = useState<ProofLinks>({
+    design: 'https://syedshahon564-ops.github.io/',
+    dev: 'https://syedshahon564-ops.github.io/danger-shawon/',
     dubbing: 'https://drive.google.com/drive/folders/sample-dubbing-showcase',
-    design: 'https://behance.net/sample-high-ctr-thumbnails',
-    dev: 'https://github.com/sample-creator-automation-bot',
   });
-  const [customNote, setCustomNote] = useState('');
+  const [customNote, setCustomNote] = useState(DEFAULT_CUSTOM_NOTE);
 
   // Leads & Execution State
   const [rawLeadsText, setRawLeadsText] = useState(DEFAULT_CSV_SAMPLE);
@@ -64,7 +76,7 @@ export default function OutreachDashboard() {
       id: 'init',
       timestamp: new Date().toLocaleTimeString(),
       status: 'INIT',
-      message: 'System ready. Configure campaign credentials and paste creator leads to initiate dispatch.',
+      message: 'System ready. Verified portfolios loaded: Design (syedshahon564-ops.github.io) and Dev (danger-shawon). Ready to dispatch.',
     },
   ]);
 
@@ -279,10 +291,10 @@ export default function OutreachDashboard() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
-                PRO-SCALE OUTREACH ENGINE
+                AUTHORITY OUTREACH PIPELINE
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
-                250M+ BENGALI REACH
+                DESIGN &bull; DEV &bull; DUB
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
@@ -291,11 +303,11 @@ export default function OutreachDashboard() {
               </span>
               <span className="text-slate-600 font-mono text-xl font-light">//</span>
               <span className="text-slate-400 text-lg md:text-xl font-medium tracking-wide">
-                AI DUB &amp; DEV SUITE
+                HIGH-CONVERSION SUITE
               </span>
             </h1>
             <p className="text-xs md:text-sm text-slate-400 mt-1">
-              Automated high-converting pitches for AI video localization, CTR thumbnails, and custom dev bots.
+              Engineered with verified live portfolios, AI voice dubbing demos, and high-CTR visual showcases that prevent rejection.
             </p>
           </div>
 
@@ -325,17 +337,19 @@ export default function OutreachDashboard() {
         {/* Left Column (5 Cols) - Campaign Configuration */}
         <div className="lg:col-span-5 space-y-5">
           <div className="bg-[#0f1623]/80 backdrop-blur-md rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-slate-800/80">
-              <div className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-800/60 text-cyan-400">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 font-mono">
-                  Campaign Configuration
-                </h2>
-                <p className="text-[11px] text-slate-400 font-mono">
-                  Sender identity &amp; verified proof showcases
-                </p>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-800/60 text-cyan-400">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 font-mono">
+                    Pitch Persona &amp; Portfolios
+                  </h2>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    Live Verified Portfolios &amp; Irresistible Offer
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -343,14 +357,14 @@ export default function OutreachDashboard() {
             <div>
               <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1.5 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-slate-500" />
-                <span>Sender Name / Brand Title</span>
+                <span>Sender Identity / Brand Title</span>
               </label>
               <input
                 type="text"
                 disabled={isDispatching}
                 value={senderName}
                 onChange={(e) => setSenderName(e.target.value)}
-                placeholder="Alex // AI Localization Lead"
+                placeholder="Syed Shawon // Creative Director & Full-Stack Engineer"
                 className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500 transition"
               />
             </div>
@@ -359,13 +373,65 @@ export default function OutreachDashboard() {
             <div className="space-y-3 pt-2">
               <span className="block text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1.5">
                 <LinkIcon className="w-3.5 h-3.5" />
-                <span>Work Proof Links (Dynamic HTML Injection)</span>
+                <span>Verified Portfolio Links (Auto-injected into Email)</span>
               </span>
+
+              {/* Graphics Design Portfolio */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                    <span>1. Graphics Design &amp; High-CTR Thumbnail Portfolio</span>
+                  </label>
+                  <a
+                    href={proofLinks.design}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-mono text-cyan-400 hover:underline flex items-center gap-0.5"
+                  >
+                    <span>Test link</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+                <input
+                  type="url"
+                  disabled={isDispatching}
+                  value={proofLinks.design}
+                  onChange={(e) => setProofLinks({ ...proofLinks, design: e.target.value })}
+                  placeholder="https://syedshahon564-ops.github.io/"
+                  className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500 transition"
+                />
+              </div>
+
+              {/* Dev & Automation Portfolio */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                    <span>2. Full-Stack Dev &amp; Automation Portfolio</span>
+                  </label>
+                  <a
+                    href={proofLinks.dev}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-mono text-emerald-400 hover:underline flex items-center gap-0.5"
+                  >
+                    <span>Test link</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+                <input
+                  type="url"
+                  disabled={isDispatching}
+                  value={proofLinks.dev}
+                  onChange={(e) => setProofLinks({ ...proofLinks, dev: e.target.value })}
+                  placeholder="https://syedshahon564-ops.github.io/danger-shawon/"
+                  className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-emerald-300 font-mono focus:outline-none focus:border-cyan-500 transition"
+                />
+              </div>
 
               {/* Dubbing Sample Link */}
               <div>
                 <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                  AI Dub Sample Link (Drive / Cloud / Video)
+                  3. AI Voice Dubbing Sample Showcase (Drive / Cloud)
                 </label>
                 <input
                   type="url"
@@ -376,51 +442,30 @@ export default function OutreachDashboard() {
                   className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
-
-              {/* Thumbnail / Design Link */}
-              <div>
-                <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                  Thumbnail / Design Link (Behance / Drive / Portfolio)
-                </label>
-                <input
-                  type="url"
-                  disabled={isDispatching}
-                  value={proofLinks.design}
-                  onChange={(e) => setProofLinks({ ...proofLinks, design: e.target.value })}
-                  placeholder="https://behance.net/..."
-                  className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition"
-                />
-              </div>
-
-              {/* Bot / Web Dev Link */}
-              <div>
-                <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                  Bot / Web Dev Link (GitHub / Live URL)
-                </label>
-                <input
-                  type="url"
-                  disabled={isDispatching}
-                  value={proofLinks.dev}
-                  onChange={(e) => setProofLinks({ ...proofLinks, dev: e.target.value })}
-                  placeholder="https://github.com/..."
-                  className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition"
-                />
-              </div>
             </div>
 
-            {/* Optional Custom Note */}
+            {/* Custom High-Converting Note */}
             <div className="pt-2">
-              <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1.5 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-slate-500" />
-                <span>Optional Custom Note (Highlighted in Email)</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Authority Pitch Note (Highlighted in Email)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setCustomNote(DEFAULT_CUSTOM_NOTE)}
+                  className="text-[10px] font-mono text-cyan-400 hover:underline"
+                >
+                  Reset Template
+                </button>
+              </div>
               <textarea
-                rows={3}
+                rows={7}
                 disabled={isDispatching}
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
-                placeholder="e.g. Specifically loved your recent 40-minute documentary edit!"
-                className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl p-3 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition resize-none"
+                placeholder="High converting pitch note..."
+                className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl p-3 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition leading-relaxed"
               />
             </div>
           </div>

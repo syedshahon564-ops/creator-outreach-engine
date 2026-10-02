@@ -35,6 +35,23 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+// Helper to auto-linkify and convert newlines to HTML for custom notes
+function formatCustomNoteToHtml(note: string): string {
+  if (!note) return '';
+  const escaped = note
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  
+  // Linkify URLs
+  const linkified = escaped.replace(
+    /(https?:\/\/[^\s]+)/g,
+    '<a href="$1" target="_blank" style="color: #38bdf8; text-decoration: underline; font-weight: 600;">$1</a>'
+  );
+
+  return linkified.replace(/\n/g, '<br />');
+}
+
 export async function POST(req: NextRequest) {
   let body: RequestPayload;
 
@@ -47,7 +64,16 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const { leads, senderName = 'Alex', customNote = '', proofLinks = {} } = body;
+  const {
+    leads,
+    senderName = 'Syed Shawon // Creative Director & Full-Stack Engineer',
+    customNote = '',
+    proofLinks = {
+      design: 'https://syedshahon564-ops.github.io/',
+      dev: 'https://syedshahon564-ops.github.io/danger-shawon/',
+      dubbing: 'https://drive.google.com/drive/folders/sample-dubbing-showcase',
+    },
+  } = body;
 
   if (!leads || !Array.isArray(leads) || leads.length === 0) {
     return new Response(JSON.stringify({ error: 'No creator leads provided in request.' }), {
@@ -132,7 +158,13 @@ export async function POST(req: NextRequest) {
         // 1. Dynamic Subject Line
         const subject = `Quick question regarding ${channelName} & Bengali audience expansion`;
 
-        // 2. High-Converting Personalized HTML Pitch Body
+        const designLink = proofLinks.design || 'https://syedshahon564-ops.github.io/';
+        const devLink = proofLinks.dev || 'https://syedshahon564-ops.github.io/danger-shawon/';
+        const dubbingLink = proofLinks.dubbing || 'https://drive.google.com/drive/folders/sample-dubbing-showcase';
+
+        const formattedCustomNote = formatCustomNoteToHtml(customNote);
+
+        // 2. High-Converting Personalized HTML Pitch Body (Irresistible Creator Pitch)
         const htmlBody = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -141,79 +173,97 @@ export async function POST(req: NextRequest) {
   <style>
     body { margin: 0; padding: 0; background-color: #0b0f17; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e2e8f0; line-height: 1.6; }
     .wrapper { width: 100%; background-color: #0b0f17; padding: 32px 16px; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #111827; border: 1px solid #1f293d; border-radius: 12px; overflow: hidden; }
-    .header { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); padding: 24px 28px; border-bottom: 1px solid #1f293d; }
-    .badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #00f0ff; background: rgba(0, 240, 255, 0.12); border: 1px solid rgba(0, 240, 255, 0.3); padding: 4px 10px; border-radius: 9999px; margin-bottom: 8px; }
-    .title { margin: 0; font-size: 19px; font-weight: 700; color: #ffffff; }
-    .content { padding: 28px; color: #cbd5e1; font-size: 14.5px; }
+    .container { max-width: 620px; margin: 0 auto; background-color: #111827; border: 1px solid #1f293d; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6); }
+    .header { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); padding: 26px 30px; border-bottom: 1px solid #1f293d; }
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #00f0ff; background: rgba(0, 240, 255, 0.12); border: 1px solid rgba(0, 240, 255, 0.3); padding: 4px 12px; border-radius: 9999px; margin-bottom: 10px; }
+    .title { margin: 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em; }
+    .content { padding: 30px; color: #cbd5e1; font-size: 14.5px; }
     .hook { font-size: 15px; margin-bottom: 18px; }
-    .feature-card { background-color: #162032; border-left: 4px solid #10b981; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 18px 0; }
-    .feature-title { color: #ffffff; font-weight: 700; font-size: 15px; }
+    
+    .note-card { background: rgba(14, 165, 233, 0.07); border-left: 4px solid #00f0ff; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 20px 0; font-size: 14px; color: #f1f5f9; line-height: 1.65; }
+    .feature-card { background-color: #162032; border-left: 4px solid #10b981; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 20px 0; }
+    .feature-title { color: #ffffff; font-weight: 700; font-size: 15.5px; }
     .metric { color: #34d399; font-weight: 700; }
     .list { margin: 14px 0; padding-left: 20px; }
-    .list li { margin-bottom: 8px; }
-    .proof-box { background-color: #0d1524; border: 1px solid #1e293b; border-radius: 8px; padding: 14px 18px; margin: 20px 0; }
-    .proof-links a { color: #38bdf8; text-decoration: none; font-weight: 600; display: inline-block; margin-right: 14px; margin-top: 6px; }
-    .proof-links a:hover { text-decoration: underline; }
-    .cta-card { background: linear-gradient(180deg, #131d2e 0%, #0d1522 100%); border: 1px dashed #00f0ff; border-radius: 8px; padding: 18px; margin: 22px 0; text-align: center; }
-    .cta-heading { color: #00f0ff; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-    .cta-button { display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 13.5px; padding: 11px 22px; border-radius: 6px; margin-top: 12px; }
-    .footer { background-color: #0b0f17; padding: 18px 28px; border-top: 1px solid #1a2233; font-size: 12px; color: #64748b; }
+    .list li { margin-bottom: 10px; }
+
+    .portfolios-grid { margin: 24px 0; padding: 18px; background: #0c121e; border: 1px solid #1e293b; border-radius: 10px; }
+    .portfolio-item { margin-bottom: 12px; padding: 10px 14px; background: #131b2c; border: 1px solid #233149; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
+    .portfolio-title { font-weight: 600; color: #f8fafc; font-size: 13.5px; }
+    .portfolio-link { color: #38bdf8; text-decoration: none; font-weight: 700; font-size: 12.5px; background: rgba(56, 189, 248, 0.12); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25); }
+    
+    .cta-card { background: linear-gradient(180deg, #131d2e 0%, #0d1522 100%); border: 1px dashed #00f0ff; border-radius: 10px; padding: 20px; margin: 24px 0; text-align: center; }
+    .cta-heading { color: #00f0ff; font-size: 14.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 26px; border-radius: 7px; margin-top: 14px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); }
+    .footer { background-color: #0b0f17; padding: 20px 30px; border-top: 1px solid #1a2233; font-size: 12px; color: #64748b; }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <div class="badge">Audience Localization Initiative</div>
+        <div class="badge">Audience &amp; Growth Localization</div>
         <h1 class="title">Unlocking South Asia's 250M+ Viewers for ${channelName}</h1>
       </div>
       <div class="content">
         <p class="hook">Hey <strong>${creatorName}</strong>,</p>
-        <p>I’ve been closely tracking your uploads on <strong>${channelName}</strong>—the editorial pacing, storytelling, and high-energy engagement consistently set the benchmark in your space.</p>
+        <p>I’ve been closely tracking your uploads on <strong>${channelName}</strong>—the editorial pacing, production consistency, and audience retention benchmark you set is incredible.</p>
 
-        ${customNote ? `<p style="background: rgba(56, 189, 248, 0.08); border-left: 3px solid #38bdf8; padding: 10px 14px; border-radius: 0 6px 6px 0; color: #e2e8f0; font-size: 14px;">${customNote}</p>` : ''}
+        ${formattedCustomNote ? `<div class="note-card">${formattedCustomNote}</div>` : ''}
 
-        <p>I'm reaching out with a direct, high-leverage growth proposal:</p>
+        <p>I’m reaching out with a direct, zero-friction growth proposition:</p>
 
         <div class="feature-card">
           <div class="feature-title">Core Initiative: AI English-to-Bengali Video Dubbing</div>
           <p style="margin: 6px 0 0 0; font-size: 13.5px; color: #94a3b8;">
-            Tap into the <span class="metric">250M+ native Bengali demographic</span> (Bangladesh &amp; West Bengal) with zero friction on your end. Bengali viewers represent one of the fastest-growing watch-time cohorts on YouTube, yet international tier-1 creators rarely localize for them.
+            Tap into the <span class="metric">250M+ native Bengali demographic</span> across Bangladesh and West Bengal with zero operational overhead on your end. Bengali viewers represent one of YouTube’s fastest-growing watch-time cohorts, yet tier-1 creators rarely localize their catalog for them.
           </p>
         </div>
 
-        <p>Beyond neural voice cloning that mirrors your exact vocal timbre and energy, our studio also provides:</p>
+        <p>Beyond neural voice cloning that preserves your exact vocal timbre, pacing, and infectious excitement, we also handle full visual &amp; tech automation:</p>
         <ul class="list">
-          <li><strong>High-CTR Custom Thumbnails:</strong> Engineered specifically for tech &amp; gaming niches (A/B tested for 12%+ CTR).</li>
-          <li><strong>Full-Stack Automation &amp; Web Dev:</strong> Custom Discord community bots, interactive esports hubs, and automation tooling for creator workflows.</li>
+          <li><strong>High-CTR Custom Thumbnails:</strong> Psychology-driven visual hierarchy tested to push 12-16%+ CTR in competitive gaming &amp; tech spaces.</li>
+          <li><strong>Full-Stack Creator Tech &amp; Bots:</strong> Interactive Discord community bots, esports tournaments hubs, and custom workflow web portals.</li>
         </ul>
 
-        <div class="proof-box">
-          <strong style="color: #cbd5e1; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Verified Work Proofs &amp; Demos:</strong>
-          <div class="proof-links">
-            ${proofLinks.dubbing ? `<a href="${proofLinks.dubbing}" target="_blank">🎙️ Bengali Dub Sample</a>` : ''}
-            ${proofLinks.design ? `<a href="${proofLinks.design}" target="_blank">🎨 Thumbnail &amp; Design Portfolio</a>` : ''}
-            ${proofLinks.dev ? `<a href="${proofLinks.dev}" target="_blank">⚡ Dev &amp; Automation Projects</a>` : ''}
+        <div class="portfolios-grid">
+          <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">
+            Verified Live Portfolios &amp; Case Studies:
           </div>
+
+          <div class="portfolio-item">
+            <span class="portfolio-title">🎨 Graphic Design &amp; High-CTR Thumbnail Portfolio</span>
+            <a href="${designLink}" target="_blank" class="portfolio-link">View Portfolio &rarr;</a>
+          </div>
+
+          <div class="portfolio-item">
+            <span class="portfolio-title">💻 Full-Stack Dev &amp; Automation Hub</span>
+            <a href="${devLink}" target="_blank" class="portfolio-link">View Dev Hub &rarr;</a>
+          </div>
+
+          ${proofLinks.dubbing ? `
+          <div class="portfolio-item">
+            <span class="portfolio-title">🎙️ AI Bengali Dubbing Samples Showcase</span>
+            <a href="${dubbingLink}" target="_blank" class="portfolio-link">Listen Samples &rarr;</a>
+          </div>` : ''}
         </div>
 
         <div class="cta-card">
           <div class="cta-heading">Zero-Risk Free Test Offer</div>
-          <p style="margin: 6px 0 10px 0; font-size: 13px; color: #cbd5e1;">
-            I can dub a free 60-second test clip from your latest video so you can judge the voice cloning fidelity and emotional accuracy yourself.
+          <p style="margin: 6px 0 12px 0; font-size: 13.5px; color: #cbd5e1;">
+            I can dub a free 60-second test clip from your latest video OR design an alternative high-CTR thumbnail so you can judge the quality yourself. Zero commitment.
           </p>
-          <a href="mailto:${smtpUser}?subject=Send%2060s%20Dub%20Test%20for%20${encodeURIComponent(channelName)}" class="cta-button">Claim Free 60s Sample</a>
+          <a href="mailto:${smtpUser}?subject=Send%2060s%20Dub%20Test%20for%20${encodeURIComponent(channelName)}" class="cta-button">Claim Free 60s Test Sample</a>
         </div>
 
-        <p style="margin-top: 20px; font-size: 14px;">
-          Would you be open to letting me dub a 60-second clip from your latest upload?
+        <p style="margin-top: 22px; font-size: 14px;">
+          Would you be open to letting me dub a 60-second sample of your latest upload?
         </p>
 
         <p style="margin-bottom: 0;">
           Best regards,<br>
-          <strong>${senderName}</strong><br>
-          <span style="font-size: 12.5px; color: #64748b;">Creator Localization &amp; AI Dev Specialist</span>
+          <strong style="color: #ffffff;">${senderName}</strong><br>
+          <span style="font-size: 12.5px; color: #64748b;">Creator Localization &amp; Full-Stack Specialist</span>
         </p>
       </div>
 
@@ -230,20 +280,20 @@ export async function POST(req: NextRequest) {
 
 I’ve been following ${channelName} and really admire the production quality you bring to every video.
 
-Quick proposition:
+${customNote ? `${customNote}\n\n` : ''}Quick proposition:
 I help international creators unlock the 250M+ Bengali demographic (Bangladesh & West Bengal) with zero friction on your end through neural English-to-Bengali video dubbing that preserves your voice, intonation, and excitement.
 
 We also build:
-- High-CTR Gaming/Tech Thumbnails (A/B tested for 12%+ CTR)
-- Custom Discord Automation Bots & Web Platforms
+- High-CTR Gaming/Tech Thumbnails (A/B tested for 12-16%+ CTR)
+- Full-Stack Discord Automation Bots & Interactive Web Platforms
 
-Proofs:
-${proofLinks.dubbing ? `- Dubbing Sample: ${proofLinks.dubbing}` : ''}
-${proofLinks.design ? `- Design Portfolio: ${proofLinks.design}` : ''}
-${proofLinks.dev ? `- Dev Projects: ${proofLinks.dev}` : ''}
+Verified Portfolios:
+- 🎨 Design Portfolio: ${designLink}
+- 💻 Dev & Automation: ${devLink}
+${proofLinks.dubbing ? `- 🎙️ Dubbing Showcase: ${dubbingLink}` : ''}
 
-Offer:
-I can dub a free 60-second test clip from your latest ${channelName} video so you can judge the quality yourself with zero commitment.
+Zero-Risk Offer:
+I can dub a free 60-second test clip from your latest ${channelName} video OR design an alternative thumbnail so you can judge the quality yourself with zero commitment.
 
 Would you be open to seeing a 60s test clip?
 
