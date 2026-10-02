@@ -18,12 +18,27 @@ import {
   Trash2,
   Check,
   ExternalLink,
+  Plus,
+  Key,
+  Mail,
+  Tv,
+  ListPlus,
+  Layers,
+  Zap,
 } from 'lucide-react';
 
 interface ProofLinks {
   dubbing: string;
   design: string;
   dev: string;
+}
+
+interface QueuedCreator {
+  id: string;
+  creatorName: string;
+  channelName: string;
+  email: string;
+  status: 'pending' | 'sending' | 'sent' | 'failed';
 }
 
 interface LogEntry {
@@ -35,11 +50,6 @@ interface LogEntry {
   latency?: number;
   message: string;
 }
-
-const DEFAULT_CSV_SAMPLE = `Linus, Linus Tech Tips, linus.sample@lmgstudios.com
-Mark, Mark Rober, mark.sample@crunchlabs.com
-Shroud, Shroud, shroud.sample@loaded.gg
-Dagogo, ColdFusion, dagogo.sample@coldfusionmedia.com`;
 
 const DEFAULT_CUSTOM_NOTE = `I specialize in 3 high-impact growth services specifically engineered for top YouTube creators:
 
@@ -57,7 +67,7 @@ Sleek channel branding, high-end YouTube banners, social media design kits, and 
 ⚡ Zero-Risk Guarantee: I don't expect you to take my word for it. Let me design 1 free concept thumbnail or create an alternative design for your next video at ZERO cost so you can judge the quality yourself.`;
 
 export default function OutreachDashboard() {
-  // Campaign Configuration State with Syed Shawon's live portfolios
+  // Campaign Persona & Proofs
   const [senderName, setSenderName] = useState('Syed Shawon // Creative Director & Full-Stack Engineer');
   const [proofLinks, setProofLinks] = useState<ProofLinks>({
     design: 'https://syedshahon564-ops.github.io/',
@@ -66,63 +76,90 @@ export default function OutreachDashboard() {
   });
   const [customNote, setCustomNote] = useState(DEFAULT_CUSTOM_NOTE);
 
-  // Leads & Execution State
-  const [rawLeadsText, setRawLeadsText] = useState(DEFAULT_CSV_SAMPLE);
+  // Optional SMTP Credentials override
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [showSmtpConfig, setShowSmtpConfig] = useState(false);
+
+  // Single Creator Input State (The Easy Form)
+  const [creatorName, setCreatorName] = useState('');
+  const [channelName, setChannelName] = useState('');
+  const [email, setEmail] = useState('');
+
+  // Queue of Creators
+  const [queuedCreators, setQueuedCreators] = useState<QueuedCreator[]>([
+    {
+      id: 'q1',
+      creatorName: 'Linus',
+      channelName: 'Linus Tech Tips',
+      email: 'linus.sample@lmgstudios.com',
+      status: 'pending',
+    },
+    {
+      id: 'q2',
+      creatorName: 'Mark',
+      channelName: 'Mark Rober',
+      email: 'mark.sample@crunchlabs.com',
+      status: 'pending',
+    },
+  ]);
+
+  // Bulk input mode toggle
+  const [inputMode, setInputMode] = useState<'single' | 'bulk'>('single');
+  const [bulkCsvText, setBulkCsvText] = useState('');
+
+  // Execution & Telemetry State
   const [isDispatching, setIsDispatching] = useState(false);
+  const [currentSendingTarget, setCurrentSendingTarget] = useState<string | null>(null);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [stats, setStats] = useState({ sent: 0, failed: 0 });
   const [cooldownSeconds, setCooldownSeconds] = useState<number | null>(null);
+  const [lastSuccessNotice, setLastSuccessNotice] = useState<string | null>(null);
 
-  // Terminal Logs State
+  // Live Terminal Logs
   const [logs, setLogs] = useState<LogEntry[]>([
     {
       id: 'init',
       timestamp: new Date().toLocaleTimeString(),
       status: 'INIT',
-      message: 'System ready. Verified portfolios loaded: Design (syedshahon564-ops.github.io) and Dev (danger-shawon). Ready to dispatch.',
+      message: 'System ready. Enter creator name, channel name, and email to send pitch.',
     },
   ]);
 
   const [copiedLogs, setCopiedLogs] = useState(false);
   const terminalEndRef = useRef<HTMLDivElement>(null);
+  const creatorNameInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  // Parse bulk CSV/Text into structured leads
-  const parseLeads = (): { creatorName: string; channelName: string; email: string }[] => {
-    return rawLeadsText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0 && !line.startsWith('#'))
-      .map((line) => {
-        const parts = line.split(',').map((p) => p.trim().replace(/^["']|["']$/g, ''));
-        return {
-          creatorName: parts[0] || 'Creator',
-          channelName: parts[1] || 'Channel',
-          email: parts[2] || '',
-        };
-      })
-      .filter((lead) => lead.email.includes('@'));
-  };
+  // 1. Send Pitch Directly to Current Input Creator
+  const handleSendSingleNow = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
-  const activeLeadsCount = parseLeads().length;
-
-  // Handle Campaign Launch
-  const handleStartCampaign = async () => {
-    const leads = parseLeads();
-
-    if (leads.length === 0) {
-      alert('Please enter at least one valid lead in format: CreatorName, ChannelName, Email');
+    if (!creatorName.trim() || !channelName.trim() || !email.trim()) {
+      alert('Please fill out Creator Name, Channel Name, and Email.');
       return;
     }
 
+    if (!email.includes('@')) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    const singleLead = {
+      creatorName: creatorName.trim(),
+      channelName: channelName.trim(),
+      email: email.trim(),
+    };
+
     setIsDispatching(true);
-    setProgress({ current: 0, total: leads.length });
-    setStats({ sent: 0, failed: 0 });
+    setCurrentSendingTarget(`${singleLead.channelName} (${singleLead.email})`);
+    setProgress({ current: 0, total: 1 });
     setCooldownSeconds(null);
+    setLastSuccessNotice(null);
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -132,10 +169,174 @@ export default function OutreachDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          leads,
+          leads: [singleLead],
           senderName,
           customNote,
           proofLinks,
+          smtpUser: smtpUser.trim() || undefined,
+          smtpPass: smtpPass.trim() || undefined,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server responded with ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('ReadableStream not supported.');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const match = line.match(/^data:\s*(.+)$/);
+          if (match) {
+            try {
+              const event = JSON.parse(match[1]);
+              handleStreamEvent(event);
+            } catch (err) {
+              console.error('SSE parse error:', err);
+            }
+          }
+        }
+      }
+
+      // Success! Clear inputs so user can easily enter the next creator
+      setLastSuccessNotice(`Pitch successfully dispatched to ${singleLead.creatorName} (${singleLead.email})!`);
+      setCreatorName('');
+      setChannelName('');
+      setEmail('');
+      creatorNameInputRef.current?.focus();
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: `abort-${Date.now()}`,
+            timestamp: new Date().toLocaleTimeString(),
+            status: 'ABORTED',
+            message: '[ABORT] Dispatch halted.',
+          },
+        ]);
+      } else {
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: `err-${Date.now()}`,
+            timestamp: new Date().toLocaleTimeString(),
+            status: 'FAILED',
+            message: `[ERROR] ${err.message}`,
+          },
+        ]);
+      }
+    } finally {
+      setIsDispatching(false);
+      setCurrentSendingTarget(null);
+      setCooldownSeconds(null);
+      abortControllerRef.current = null;
+    }
+  };
+
+  // 2. Add current input creator to Queue
+  const handleAddToQueue = () => {
+    if (!creatorName.trim() || !channelName.trim() || !email.trim()) {
+      alert('Please fill out Creator Name, Channel Name, and Email.');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    const newCreator: QueuedCreator = {
+      id: `q-${Date.now()}`,
+      creatorName: creatorName.trim(),
+      channelName: channelName.trim(),
+      email: email.trim(),
+      status: 'pending',
+    };
+
+    setQueuedCreators((prev) => [...prev, newCreator]);
+    setCreatorName('');
+    setChannelName('');
+    setEmail('');
+    creatorNameInputRef.current?.focus();
+  };
+
+  // 3. Import Bulk CSV into Queue
+  const handleImportBulkCsv = () => {
+    if (!bulkCsvText.trim()) return;
+
+    const parsed = bulkCsvText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('#'))
+      .map((line, idx) => {
+        const parts = line.split(',').map((p) => p.trim().replace(/^["']|["']$/g, ''));
+        return {
+          id: `bulk-${Date.now()}-${idx}`,
+          creatorName: parts[0] || 'Creator',
+          channelName: parts[1] || 'Channel',
+          email: parts[2] || '',
+          status: 'pending' as const,
+        };
+      })
+      .filter((c) => c.email.includes('@'));
+
+    if (parsed.length === 0) {
+      alert('No valid rows found. Format: CreatorName, ChannelName, Email');
+      return;
+    }
+
+    setQueuedCreators((prev) => [...prev, ...parsed]);
+    setBulkCsvText('');
+    setInputMode('single');
+  };
+
+  // 4. Dispatch All Queued Creators (with Anti-Spam Cooldown)
+  const handleStartQueueDispatch = async () => {
+    const pendingLeads = queuedCreators.filter((c) => c.status === 'pending');
+
+    if (pendingLeads.length === 0) {
+      alert('No pending creators in queue. Add someone above first.');
+      return;
+    }
+
+    setIsDispatching(true);
+    setProgress({ current: 0, total: pendingLeads.length });
+    setStats({ sent: 0, failed: 0 });
+    setCooldownSeconds(null);
+    setLastSuccessNotice(null);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await fetch('/api/send-outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leads: pendingLeads.map((p) => ({
+            creatorName: p.creatorName,
+            channelName: p.channelName,
+            email: p.email,
+          })),
+          senderName,
+          customNote,
+          proofLinks,
+          smtpUser: smtpUser.trim() || undefined,
+          smtpPass: smtpPass.trim() || undefined,
         }),
         signal: controller.signal,
       });
@@ -179,7 +380,7 @@ export default function OutreachDashboard() {
             id: `abort-${Date.now()}`,
             timestamp: new Date().toLocaleTimeString(),
             status: 'ABORTED',
-            message: '[ABORT] Campaign manually halted by operator.',
+            message: '[ABORT] Batch dispatch halted.',
           },
         ]);
       } else {
@@ -195,6 +396,7 @@ export default function OutreachDashboard() {
       }
     } finally {
       setIsDispatching(false);
+      setCurrentSendingTarget(null);
       setCooldownSeconds(null);
       abortControllerRef.current = null;
     }
@@ -224,6 +426,14 @@ export default function OutreachDashboard() {
     if (event.status === 'SENT') {
       setStats((prev) => ({ ...prev, sent: prev.sent + 1 }));
       setProgress((prev) => ({ ...prev, current: event.index }));
+
+      // Update queue item status
+      if (event.email) {
+        setQueuedCreators((prev) =>
+          prev.map((c) => (c.email === event.email ? { ...c, status: 'sent' } : c))
+        );
+      }
+
       setLogs((prev) => [
         ...prev,
         {
@@ -239,6 +449,13 @@ export default function OutreachDashboard() {
     } else if (event.status === 'FAILED') {
       setStats((prev) => ({ ...prev, failed: prev.failed + 1 }));
       setProgress((prev) => ({ ...prev, current: event.index }));
+
+      if (event.email) {
+        setQueuedCreators((prev) =>
+          prev.map((c) => (c.email === event.email ? { ...c, status: 'failed' } : c))
+        );
+      }
+
       setLogs((prev) => [
         ...prev,
         {
@@ -270,6 +487,10 @@ export default function OutreachDashboard() {
     abortControllerRef.current?.abort();
   };
 
+  const handleRemoveQueued = (id: string) => {
+    setQueuedCreators((prev) => prev.filter((c) => c.id !== id));
+  };
+
   const handleCopyLogs = () => {
     const text = logs.map((l) => `[${l.timestamp}] ${l.message}`).join('\n');
     navigator.clipboard.writeText(text);
@@ -277,7 +498,7 @@ export default function OutreachDashboard() {
     setTimeout(() => setCopiedLogs(false), 2000);
   };
 
-  const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+  const pendingCount = queuedCreators.filter((c) => c.status === 'pending').length;
 
   return (
     <main className="min-h-screen bg-[#0a0d14] text-slate-100 p-4 md:p-6 lg:p-8 font-sans antialiased selection:bg-cyan-500 selection:text-black">
@@ -294,23 +515,23 @@ export default function OutreachDashboard() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
-                AUTHORITY OUTREACH PIPELINE
+                DIRECT CREATOR DISPATCHER
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
-                DESIGN &bull; DEV &bull; DUB
+                THUMBNAILS &bull; WEBSITES &bull; BRANDING
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-teal-300">
-                YOUTUBER COLD OUTREACH
+                CREATOR OUTREACH ENGINE
               </span>
               <span className="text-slate-600 font-mono text-xl font-light">//</span>
               <span className="text-slate-400 text-lg md:text-xl font-medium tracking-wide">
-                HIGH-CONVERSION SUITE
+                SHAWON SUITE
               </span>
             </h1>
             <p className="text-xs md:text-sm text-slate-400 mt-1">
-              Engineered with verified live portfolios, AI voice dubbing demos, and high-CTR visual showcases that prevent rejection.
+              Enter a creator’s name, channel, and email to dispatch a personalized pitch with your live portfolios in seconds.
             </p>
           </div>
 
@@ -319,7 +540,7 @@ export default function OutreachDashboard() {
             <div className="bg-[#0a0d14] px-3.5 py-2 rounded-xl border border-slate-800 flex items-center gap-2">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
               <span className="text-slate-400">Queue:</span>
-              <strong className="text-slate-200">{activeLeadsCount}</strong>
+              <strong className="text-slate-200">{pendingCount}</strong>
             </div>
             <div className="bg-[#0a0d14] px-3.5 py-2 rounded-xl border border-emerald-900/50 flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -337,7 +558,7 @@ export default function OutreachDashboard() {
 
       {/* Main Command Center Grid */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column (5 Cols) - Campaign Configuration */}
+        {/* Left Column (5 Cols) - Persona & Portfolios */}
         <div className="lg:col-span-5 space-y-5">
           <div className="bg-[#0f1623]/80 backdrop-blur-md rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
@@ -347,7 +568,7 @@ export default function OutreachDashboard() {
                 </div>
                 <div>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 font-mono">
-                    Pitch Persona &amp; Portfolios
+                    PITCH PERSONA &amp; PORTFOLIOS
                   </h2>
                   <p className="text-[11px] text-slate-400 font-mono">
                     Live Verified Portfolios &amp; Irresistible Offer
@@ -356,11 +577,11 @@ export default function OutreachDashboard() {
               </div>
             </div>
 
-            {/* Sender Name */}
+            {/* Sender Identity */}
             <div>
               <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1.5 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-slate-500" />
-                <span>Sender Identity / Brand Title</span>
+                <span>SENDER IDENTITY / BRAND TITLE</span>
               </label>
               <input
                 type="text"
@@ -372,11 +593,11 @@ export default function OutreachDashboard() {
               />
             </div>
 
-            {/* Proof Links */}
+            {/* Verified Portfolio Links */}
             <div className="space-y-3 pt-2">
               <span className="block text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1.5">
                 <LinkIcon className="w-3.5 h-3.5" />
-                <span>Verified Portfolio Links (Auto-injected into Email)</span>
+                <span>VERIFIED PORTFOLIO LINKS (AUTO-INJECTED INTO EMAIL)</span>
               </span>
 
               {/* Graphics Design Portfolio */}
@@ -400,12 +621,11 @@ export default function OutreachDashboard() {
                   disabled={isDispatching}
                   value={proofLinks.design}
                   onChange={(e) => setProofLinks({ ...proofLinks, design: e.target.value })}
-                  placeholder="https://syedshahon564-ops.github.io/"
                   className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
 
-              {/* Dev & Automation Portfolio */}
+              {/* Dev & Website Portfolio */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
@@ -426,7 +646,6 @@ export default function OutreachDashboard() {
                   disabled={isDispatching}
                   value={proofLinks.dev}
                   onChange={(e) => setProofLinks({ ...proofLinks, dev: e.target.value })}
-                  placeholder="https://syedshahon564-ops.github.io/danger-shawon/"
                   className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-emerald-300 font-mono focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
@@ -441,18 +660,17 @@ export default function OutreachDashboard() {
                   disabled={isDispatching}
                   value={proofLinks.dubbing}
                   onChange={(e) => setProofLinks({ ...proofLinks, dubbing: e.target.value })}
-                  placeholder="https://drive.google.com/..."
                   className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
             </div>
 
-            {/* Custom High-Converting Note */}
+            {/* Custom Authority Pitch Note */}
             <div className="pt-2">
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Authority Pitch Note (Highlighted in Email)</span>
+                  <span>AUTHORITY PITCH NOTE (HIGHLIGHTED IN EMAIL)</span>
                 </label>
                 <button
                   type="button"
@@ -463,143 +681,333 @@ export default function OutreachDashboard() {
                 </button>
               </div>
               <textarea
-                rows={7}
+                rows={6}
                 disabled={isDispatching}
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
-                placeholder="High converting pitch note..."
-                className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl p-3 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition leading-relaxed"
+                className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl p-3 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition leading-relaxed resize-none"
               />
             </div>
-          </div>
 
-          {/* Anti-Spam Safety Advice Panel */}
-          <div className="bg-[#0f1623]/80 backdrop-blur-md rounded-2xl p-4 border border-emerald-950/60 shadow-xl flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-emerald-950/70 border border-emerald-800/60 text-emerald-400 shrink-0 mt-0.5">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div className="text-xs font-mono space-y-1">
-              <div className="font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
-                <span>Anti-Spam Throttling Active</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              </div>
-              <p className="text-slate-400 text-[11px] leading-relaxed">
-                Every dispatch sequence enforces a mandatory <strong>20–30 second cooldown</strong> between emails to simulate authentic human behavior and safeguard your Gmail sender score.
-              </p>
+            {/* Optional Gmail SMTP Credentials Override */}
+            <div className="pt-2 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => setShowSmtpConfig(!showSmtpConfig)}
+                className="flex items-center justify-between w-full text-xs font-mono text-slate-400 hover:text-slate-200 transition py-1"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Gmail SMTP Setup ({smtpUser ? 'Configured' : 'Using .env.local'})</span>
+                </span>
+                <span className="text-[10px] text-cyan-400">{showSmtpConfig ? '▲ Hide' : '▼ Set Password'}</span>
+              </button>
+
+              {showSmtpConfig && (
+                <div className="mt-3 p-3.5 rounded-xl bg-[#0a0d14] border border-slate-800 space-y-3 font-mono">
+                  <div>
+                    <label className="block text-[10px] uppercase text-slate-400 mb-1">
+                      Your Gmail Address
+                    </label>
+                    <input
+                      type="email"
+                      value={smtpUser}
+                      onChange={(e) => setSmtpUser(e.target.value)}
+                      placeholder="yourname@gmail.com"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase text-slate-400 mb-1">
+                      16-Character App Password
+                    </label>
+                    <input
+                      type="password"
+                      value={smtpPass}
+                      onChange={(e) => setSmtpPass(e.target.value)}
+                      placeholder="abcd efgh ijkl mnop"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-normal">
+                    Generate this from Google Account &gt; Security &gt; 2-Step Verification &gt; App Passwords.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Right Column (7 Cols) - Leads & Live Execution */}
+        {/* Right Column (7 Cols) - Quick Single Creator Dispatch & Queue */}
         <div className="lg:col-span-7 space-y-5 flex flex-col">
-          {/* Leads Matrix & Action Panel */}
+          {/* Main Direct Input Form */}
           <div className="bg-[#0f1623]/80 backdrop-blur-md rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-emerald-950/80 border border-emerald-800/60 text-emerald-400">
-                  <Send className="w-4 h-4" />
+                  <Zap className="w-4 h-4" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 font-mono">
-                    Target Leads Matrix
+                    Direct Creator Pitch Form
                   </h2>
                   <p className="text-[11px] text-slate-400 font-mono">
-                    Format: <code className="text-cyan-400 font-semibold">CreatorName, ChannelName, Email</code>
+                    Fill in the 3 details and dispatch immediately or queue up
                   </p>
                 </div>
               </div>
 
-              <button
-                type="button"
-                disabled={isDispatching}
-                onClick={() => setRawLeadsText(DEFAULT_CSV_SAMPLE)}
-                className="text-xs font-mono text-cyan-400 hover:text-cyan-300 underline disabled:opacity-50"
-              >
-                Reset Sample Leads
-              </button>
-            </div>
-
-            {/* Bulk Leads CSV Text Area */}
-            <div>
-              <textarea
-                rows={5}
-                disabled={isDispatching}
-                value={rawLeadsText}
-                onChange={(e) => setRawLeadsText(e.target.value)}
-                placeholder="Linus, Linus Tech Tips, linus@lmgstudios.com&#10;Mark, Mark Rober, mark@crunchlabs.com"
-                className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500 transition"
-              />
-              <div className="flex justify-between items-center mt-1.5 text-[11px] font-mono text-slate-500">
-                <span>Separate each creator with a new line</span>
-                <span className="text-cyan-400 font-semibold">{activeLeadsCount} valid target(s) ready</span>
+              {/* Mode switch */}
+              <div className="flex bg-[#0a0d14] rounded-lg p-0.5 border border-slate-800 text-[11px] font-mono">
+                <button
+                  type="button"
+                  onClick={() => setInputMode('single')}
+                  className={`px-3 py-1 rounded transition ${
+                    inputMode === 'single'
+                      ? 'bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Direct Form
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInputMode('bulk')}
+                  className={`px-3 py-1 rounded transition ${
+                    inputMode === 'bulk'
+                      ? 'bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Bulk CSV
+                </button>
               </div>
             </div>
 
-            {/* Launch Action Controls */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-              {/* Cooldown / Status Pill */}
-              <div className="w-full sm:w-auto">
-                {cooldownSeconds !== null && cooldownSeconds > 0 ? (
-                  <div className="flex items-center gap-2 text-xs font-mono text-amber-400 bg-amber-950/40 px-3.5 py-2 rounded-xl border border-amber-800/50">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                    </span>
-                    <span>Anti-Spam Cooling: <strong>{cooldownSeconds}s</strong> remaining...</span>
-                  </div>
-                ) : (
-                  <div className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Nodemailer SMTP Transporter Ready</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Start / Abort Campaign Button */}
-              <div className="w-full sm:w-auto flex justify-end">
-                {isDispatching ? (
-                  <button
-                    onClick={handleAbort}
-                    className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-rose-950/90 hover:bg-rose-900 border border-rose-700/80 text-rose-300 font-mono text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-rose-950/50"
-                  >
-                    <Square className="w-3.5 h-3.5 fill-rose-300" />
-                    <span>Halt Sequence</span>
-                  </button>
-                ) : (
-                  <button
-                    disabled={activeLeadsCount === 0}
-                    onClick={handleStartCampaign}
-                    className="relative group overflow-hidden flex items-center justify-center gap-2 px-7 py-3 rounded-xl font-mono text-xs font-bold uppercase tracking-widest bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 text-black hover:shadow-cyan-500/25 hover:scale-[1.01] active:scale-[0.99] transition shadow-2xl disabled:opacity-40 disabled:pointer-events-none"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>START PERSONALIZED CAMPAIGN</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Dynamic Progress Indicator */}
-            {(isDispatching || progress.current > 0) && (
-              <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
-                <div className="flex justify-between text-[11px] font-mono text-slate-400">
-                  <span>
-                    Dispatched: <strong className="text-cyan-400">{progress.current}</strong> / {progress.total}
-                  </span>
-                  <span className="text-emerald-400 font-bold">{percentage}%</span>
+            {/* Success Toast Notice */}
+            {lastSuccessNotice && (
+              <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 text-xs font-mono flex items-center justify-between shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{lastSuccessNotice}</span>
                 </div>
-                <div className="w-full bg-[#0a0d14] rounded-full h-2 overflow-hidden border border-slate-800">
-                  <div
-                    className="h-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-teal-300 rounded-full transition-all duration-300"
-                    style={{ width: `${percentage}%` }}
-                  />
+                <button
+                  onClick={() => setLastSuccessNotice(null)}
+                  className="text-emerald-400 hover:text-emerald-200 text-xs ml-2"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Direct Form Inputs */}
+            {inputMode === 'single' ? (
+              <form onSubmit={handleSendSingleNow} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* 1. Creator Name */}
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1 flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>1. Creator Name</span>
+                    </label>
+                    <input
+                      ref={creatorNameInputRef}
+                      type="text"
+                      disabled={isDispatching}
+                      value={creatorName}
+                      onChange={(e) => setCreatorName(e.target.value)}
+                      placeholder="e.g. Linus"
+                      className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+
+                  {/* 2. YouTube Channel Name */}
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1 flex items-center gap-1">
+                      <Tv className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>2. Channel Name</span>
+                    </label>
+                    <input
+                      type="text"
+                      disabled={isDispatching}
+                      value={channelName}
+                      onChange={(e) => setChannelName(e.target.value)}
+                      placeholder="e.g. Linus Tech Tips"
+                      className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+
+                  {/* 3. Email */}
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1 flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>3. Creator Email</span>
+                    </label>
+                    <input
+                      type="email"
+                      disabled={isDispatching}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="e.g. linus@channel.com"
+                      className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons for Single Form */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                  <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Auto-clears inputs after send so you can do the next person instantly.</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button
+                      type="button"
+                      disabled={isDispatching || !creatorName || !channelName || !email}
+                      onClick={handleAddToQueue}
+                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs border border-slate-700 transition disabled:opacity-40"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add to Queue</span>
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isDispatching || !creatorName || !channelName || !email}
+                      className="relative overflow-hidden flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-cyan-500 to-emerald-400 text-black hover:scale-[1.02] active:scale-[0.99] transition shadow-lg shadow-cyan-500/20 disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                      <Send className="w-3.5 h-3.5 fill-current" />
+                      <span>{isDispatching ? 'SENDING PITCH...' : 'SEND PITCH NOW'}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              /* Bulk CSV Mode */
+              <div className="space-y-3">
+                <textarea
+                  rows={4}
+                  value={bulkCsvText}
+                  onChange={(e) => setBulkCsvText(e.target.value)}
+                  placeholder="MrBeast, MrBeast, beast@mrbeast.com&#10;Linus, Linus Tech Tips, linus@lmgstudios.com"
+                  className="w-full bg-[#0a0d14] border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500 transition"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleImportBulkCsv}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black font-bold font-mono text-xs transition"
+                  >
+                    <ListPlus className="w-3.5 h-3.5" />
+                    <span>Import to Queue</span>
+                  </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Real-time Execution Log Terminal */}
-          <div className="bg-[#070a0f] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col flex-1 min-h-[360px]">
-            {/* Terminal Title Bar */}
+          {/* Queue Section */}
+          <div className="bg-[#0f1623]/80 backdrop-blur-md rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-800/60 text-cyan-400">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-100 font-mono">
+                    Batch Queue ({queuedCreators.length} Targets)
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {pendingCount} pending &bull; Anti-spam safe throttle active
+                  </p>
+                </div>
+              </div>
+
+              {isDispatching ? (
+                <button
+                  onClick={handleAbort}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-rose-950 border border-rose-700 text-rose-300 font-mono text-xs font-bold transition hover:bg-rose-900"
+                >
+                  <Square className="w-3 h-3 fill-rose-300" />
+                  <span>Halt</span>
+                </button>
+              ) : (
+                <button
+                  disabled={pendingCount === 0}
+                  onClick={handleStartQueueDispatch}
+                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-mono text-xs font-bold uppercase tracking-wider hover:scale-[1.01] transition disabled:opacity-40 disabled:pointer-events-none shadow-md shadow-emerald-500/20"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Dispatch All ({pendingCount})</span>
+                </button>
+              )}
+            </div>
+
+            {/* Active Cooldown Banner */}
+            {cooldownSeconds !== null && cooldownSeconds > 0 && (
+              <div className="flex items-center gap-2 text-xs font-mono text-amber-400 bg-amber-950/40 px-3.5 py-2 rounded-xl border border-amber-800/50">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                <span>Anti-Spam Cooling Active: <strong>{cooldownSeconds}s</strong> remaining before next creator...</span>
+              </div>
+            )}
+
+            {/* Queue List Cards */}
+            <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+              {queuedCreators.length === 0 ? (
+                <div className="py-6 text-center text-xs font-mono text-slate-500">
+                  Queue is empty. Enter creator details in the form above.
+                </div>
+              ) : (
+                queuedCreators.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#0a0d14] border border-slate-800 hover:border-slate-700 transition font-mono text-xs"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-200">
+                        {c.channelName} <span className="text-slate-400 font-normal">({c.creatorName})</span>
+                      </div>
+                      <div className="text-[11px] text-cyan-400">{c.email}</div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {c.status === 'sent' && (
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-semibold">
+                          SENT
+                        </span>
+                      )}
+                      {c.status === 'failed' && (
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-rose-950/80 text-rose-400 border border-rose-800/60 font-semibold">
+                          FAILED
+                        </span>
+                      )}
+                      {c.status === 'pending' && (
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-slate-900 text-slate-400 border border-slate-800">
+                          PENDING
+                        </span>
+                      )}
+
+                      <button
+                        disabled={isDispatching}
+                        onClick={() => handleRemoveQueued(c.id)}
+                        className="p-1 rounded text-slate-500 hover:text-rose-400 transition disabled:opacity-40"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Real-Time Live Telemetry Terminal */}
+          <div className="bg-[#070a0f] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col flex-1 min-h-[300px]">
             <div className="bg-[#0f1623] px-4 py-3 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 mr-2">
@@ -636,8 +1044,7 @@ export default function OutreachDashboard() {
               </div>
             </div>
 
-            {/* Stream Logs */}
-            <div className="p-4 overflow-y-auto flex-1 font-mono text-xs space-y-2 bg-[#05070a] relative max-h-[380px]">
+            <div className="p-4 overflow-y-auto flex-1 font-mono text-xs space-y-2 bg-[#05070a] relative max-h-[320px]">
               {logs.map((log) => (
                 <div key={log.id} className="flex items-start gap-2.5 leading-relaxed">
                   <span className="text-slate-600 select-none text-[11px] shrink-0">

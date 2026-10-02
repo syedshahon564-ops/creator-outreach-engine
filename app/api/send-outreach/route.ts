@@ -21,6 +21,8 @@ interface RequestPayload {
   senderName?: string;
   customNote?: string;
   proofLinks?: ProofLinks;
+  smtpUser?: string;
+  smtpPass?: string;
 }
 
 // Utility to sleep with AbortSignal cancellation support
@@ -82,19 +84,19 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // SMTP credentials from environment
+  // SMTP credentials from body override or environment variables
   const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
   const smtpPort = Number(process.env.SMTP_PORT || 465);
-  const smtpUser = process.env.SMTP_USER || '';
-  const smtpPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const smtpUser = (body.smtpUser || process.env.SMTP_USER || '').trim();
+  const smtpPass = (body.smtpPass || process.env.SMTP_PASS || '').replace(/\s+/g, '');
   const smtpSecure = smtpPort === 465;
 
   if (!smtpUser || !smtpPass) {
     return new Response(
       JSON.stringify({
-        error: 'SMTP credentials missing. Please define SMTP_USER and SMTP_PASS in .env.local.',
+        error: 'SMTP credentials missing. Please enter your Gmail and 16-character App Password.',
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
@@ -127,7 +129,7 @@ export async function POST(req: NextRequest) {
 
       emitEvent({
         type: 'INIT',
-        message: `[MISSION ENGINE] Campaign initialized. Enqueued ${leads.length} creator targets.`,
+        message: `[MISSION ENGINE] Campaign initialized. Processing ${leads.length} creator target(s).`,
         total: leads.length,
         timestamp: new Date().toISOString(),
       });
@@ -136,7 +138,7 @@ export async function POST(req: NextRequest) {
         if (req.signal.aborted) {
           emitEvent({
             type: 'ABORTED',
-            message: '[ABORT] Dispatch sequence halted by client.',
+            message: '[ABORT] Dispatch sequence halted by operator.',
             timestamp: new Date().toISOString(),
           });
           break;
@@ -156,7 +158,7 @@ export async function POST(req: NextRequest) {
         });
 
         // 1. Dynamic Subject Line
-        const subject = `Quick question regarding ${channelName} & Bengali audience expansion`;
+        const subject = `Quick question regarding ${channelName} & growth strategy`;
 
         const designLink = proofLinks.design || 'https://syedshahon564-ops.github.io/';
         const devLink = proofLinks.dev || 'https://syedshahon564-ops.github.io/danger-shawon/';
@@ -164,7 +166,7 @@ export async function POST(req: NextRequest) {
 
         const formattedCustomNote = formatCustomNoteToHtml(customNote);
 
-        // 2. High-Converting Personalized HTML Pitch Body (Irresistible Creator Pitch)
+        // 2. High-Converting Personalized HTML Pitch Body
         const htmlBody = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -202,8 +204,8 @@ export async function POST(req: NextRequest) {
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <div class="badge">Audience &amp; Growth Localization</div>
-        <h1 class="title">Unlocking South Asia's 250M+ Viewers for ${channelName}</h1>
+        <div class="badge">Creator Growth &amp; Branding</div>
+        <h1 class="title">Scaling Audience &amp; Click-Through for ${channelName}</h1>
       </div>
       <div class="content">
         <p class="hook">Hey <strong>${creatorName}</strong>,</p>
@@ -211,20 +213,14 @@ export async function POST(req: NextRequest) {
 
         ${formattedCustomNote ? `<div class="note-card">${formattedCustomNote}</div>` : ''}
 
-        <p>I’m reaching out with a direct, zero-friction growth proposition:</p>
+        <p>Beyond design and web development, we also tap into high-leverage localization:</p>
 
         <div class="feature-card">
-          <div class="feature-title">Core Initiative: AI English-to-Bengali Video Dubbing</div>
+          <div class="feature-title">Secondary Growth: AI English-to-Bengali Video Dubbing</div>
           <p style="margin: 6px 0 0 0; font-size: 13.5px; color: #94a3b8;">
-            Tap into the <span class="metric">250M+ native Bengali demographic</span> across Bangladesh and West Bengal with zero operational overhead on your end. Bengali viewers represent one of YouTube’s fastest-growing watch-time cohorts, yet tier-1 creators rarely localize their catalog for them.
+            Tap into the <span class="metric">250M+ native Bengali demographic</span> across Bangladesh and West Bengal with zero operational overhead on your end.
           </p>
         </div>
-
-        <p>Beyond neural voice cloning that preserves your exact vocal timbre, pacing, and infectious excitement, we also handle full visual &amp; tech automation:</p>
-        <ul class="list">
-          <li><strong>High-CTR Custom Thumbnails:</strong> Psychology-driven visual hierarchy tested to push 12-16%+ CTR in competitive gaming &amp; tech spaces.</li>
-          <li><strong>Full-Stack Creator Tech &amp; Bots:</strong> Interactive Discord community bots, esports tournaments hubs, and custom workflow web portals.</li>
-        </ul>
 
         <div class="portfolios-grid">
           <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">
@@ -251,13 +247,13 @@ export async function POST(req: NextRequest) {
         <div class="cta-card">
           <div class="cta-heading">Zero-Risk Free Test Offer</div>
           <p style="margin: 6px 0 12px 0; font-size: 13.5px; color: #cbd5e1;">
-            I can dub a free 60-second test clip from your latest video OR design an alternative high-CTR thumbnail so you can judge the quality yourself. Zero commitment.
+            I can design 1 free concept thumbnail for your next video OR dub a 60-second test clip so you can judge the quality yourself. Zero commitment.
           </p>
-          <a href="mailto:${smtpUser}?subject=Send%2060s%20Dub%20Test%20for%20${encodeURIComponent(channelName)}" class="cta-button">Claim Free 60s Test Sample</a>
+          <a href="mailto:${smtpUser}?subject=Send%20Free%20Thumbnail%20or%20Dub%20Test%20for%20${encodeURIComponent(channelName)}" class="cta-button">Claim Free Test Sample</a>
         </div>
 
         <p style="margin-top: 22px; font-size: 14px;">
-          Would you be open to letting me dub a 60-second sample or craft a test thumbnail for your next upload?
+          Would you be open to letting me send over a free concept thumbnail or 60-second sample for your next upload?
         </p>
 
         <p style="margin-bottom: 0;">
@@ -340,7 +336,7 @@ ${smtpUser}`;
           });
         }
 
-        // 5. Enforce Anti-Spam Delay (20 to 30s) between dispatches (skip on final email)
+        // 5. Enforce Anti-Spam Delay (20 to 30s) between dispatches (skip on final email or if only 1 lead)
         if (i < leads.length - 1) {
           const delaySeconds = 25; // Safe anti-spam interval
           for (let sec = delaySeconds; sec > 0; sec--) {
