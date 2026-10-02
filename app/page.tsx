@@ -76,10 +76,10 @@ export default function OutreachDashboard() {
   });
   const [customNote, setCustomNote] = useState(DEFAULT_CUSTOM_NOTE);
 
-  // Optional SMTP Credentials override
+  // Optional SMTP Credentials override (open by default so user can easily enter Gmail & App Password)
   const [smtpUser, setSmtpUser] = useState('');
   const [smtpPass, setSmtpPass] = useState('');
-  const [showSmtpConfig, setShowSmtpConfig] = useState(false);
+  const [showSmtpConfig, setShowSmtpConfig] = useState(true);
 
   // Single Creator Input State (The Easy Form)
   const [creatorName, setCreatorName] = useState('');
@@ -181,7 +181,11 @@ export default function OutreachDashboard() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server responded with ${response.status}`);
+        const msg = errorData.error || `Server responded with ${response.status}`;
+        if (msg.includes('SMTP credentials missing')) {
+          alert('⚠️ Gmail কানেক্ট করা হয়নি!\n\nবাম পাশে "Gmail Sender Credentials" ঘরে আপনার Gmail এবং ১৬ অক্ষরের App Password লিখে দিন।');
+        }
+        throw new Error(msg);
       }
 
       const reader = response.body?.getReader();
@@ -343,7 +347,11 @@ export default function OutreachDashboard() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server responded with ${response.status}`);
+        const msg = errorData.error || `Server responded with ${response.status}`;
+        if (msg.includes('SMTP credentials missing')) {
+          alert('⚠️ Gmail কানেক্ট করা হয়নি!\n\nবাম পাশে "Gmail Sender Credentials" ঘরে আপনার Gmail এবং ১৬ অক্ষরের App Password লিখে দিন।');
+        }
+        throw new Error(msg);
       }
 
       const reader = response.body?.getReader();
@@ -689,51 +697,55 @@ export default function OutreachDashboard() {
               />
             </div>
 
-            {/* Optional Gmail SMTP Credentials Override */}
+            {/* Gmail SMTP Credentials Card */}
             <div className="pt-2 border-t border-slate-800/80">
-              <button
-                type="button"
-                onClick={() => setShowSmtpConfig(!showSmtpConfig)}
-                className="flex items-center justify-between w-full text-xs font-mono text-slate-400 hover:text-slate-200 transition py-1"
-              >
-                <span className="flex items-center gap-1.5">
-                  <Key className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Gmail SMTP Setup ({smtpUser ? 'Configured' : 'Using .env.local'})</span>
-                </span>
-                <span className="text-[10px] text-cyan-400">{showSmtpConfig ? '▲ Hide' : '▼ Set Password'}</span>
-              </button>
-
-              {showSmtpConfig && (
-                <div className="mt-3 p-3.5 rounded-xl bg-[#0a0d14] border border-slate-800 space-y-3 font-mono">
-                  <div>
-                    <label className="block text-[10px] uppercase text-slate-400 mb-1">
-                      Your Gmail Address
-                    </label>
-                    <input
-                      type="email"
-                      value={smtpUser}
-                      onChange={(e) => setSmtpUser(e.target.value)}
-                      placeholder="yourname@gmail.com"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase text-slate-400 mb-1">
-                      16-Character App Password
-                    </label>
-                    <input
-                      type="password"
-                      value={smtpPass}
-                      onChange={(e) => setSmtpPass(e.target.value)}
-                      placeholder="abcd efgh ijkl mnop"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                    />
-                  </div>
-                  <p className="text-[10px] text-slate-500 leading-normal">
-                    Generate this from Google Account &gt; Security &gt; 2-Step Verification &gt; App Passwords.
-                  </p>
+              <div className="p-3.5 rounded-xl bg-[#0a0d14] border border-cyan-900/40 space-y-3 font-mono shadow-inner">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Gmail Sender Credentials</span>
+                  </span>
+                  <a
+                    href="https://myaccount.google.com/apppasswords"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-cyan-400 hover:underline flex items-center gap-1"
+                  >
+                    <span>Get App Password</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
                 </div>
-              )}
+
+                <div>
+                  <label className="block text-[10px] uppercase text-slate-400 mb-1">
+                    Your Gmail Address (From which emails will be sent)
+                  </label>
+                  <input
+                    type="email"
+                    value={smtpUser}
+                    onChange={(e) => setSmtpUser(e.target.value)}
+                    placeholder="e.g. islamshahon72@gmail.com"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase text-slate-400 mb-1">
+                    16-Character Gmail App Password
+                  </label>
+                  <input
+                    type="password"
+                    value={smtpPass}
+                    onChange={(e) => setSmtpPass(e.target.value)}
+                    placeholder="abcd efgh ijkl mnop"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono tracking-wider"
+                  />
+                </div>
+
+                <p className="text-[10px] text-slate-400 leading-normal bg-slate-900/60 p-2 rounded border border-slate-800">
+                  💡 <strong>Important:</strong> Google requires an <strong>App Password</strong> (not your normal Gmail login password). Turn on 2-Step Verification &gt; Create App Password named &quot;Outreach&quot; &gt; paste the 16 letters above.
+                </p>
+              </div>
             </div>
           </div>
         </div>
